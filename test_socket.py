@@ -2,12 +2,13 @@
 # the sender process sends 2 integers and the receiver sums them
 
 import socket
+import pickle
 from random import random
 from os import fork, getpid
 from time import sleep
 
 #defining a class to handle the sockets with a simple interface
-class testsocket:
+class testsocket(object):
     def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     def listen(self, port):
@@ -21,10 +22,7 @@ class testsocket:
         self.sock.sendall(data)
     def read(self, conn):
         # we are receiving the data as a string with space as separator
-        data = conn.recv(1024)
-        # building a list of integers from the string, that we will sum
-        to_sum = map(int,[x for x in data.split(' ') if x])
-        print '+ Sum is ' + str(sum(to_sum))
+        return conn.recv(1024)
     def close(self):
         self.sock.close()
 
@@ -36,7 +34,7 @@ sep = ' '
 count = 0
 
 # forking the process and storing parent/child info in newRef
-newRef = fork()
+newRef = 2 #fork()
 
 # creating a socket in parent and child
 sock1 = testsocket()
@@ -62,21 +60,26 @@ else:
 def genNumber():
     return str(int(100*random())) + sep
 
+import pdb
+pdb.set_trace()
+
 while count < 10:
     # code that will run only for the sender
     if sender == True:
-        num1 = genNumber()
-        num2 = genNumber()
-        sock1.send(num1)
-        print 'Sending ' + num1
-        sock1.send(num2)
-        print 'Sending ' + num2
-        sleep(1)
+        payload = {}
+        payload['num1'] = getNumber()
+        payload['num2'] = getNumber()
+        payload['operator'] = 'sum'
+        serialized_payload = pickle.dumps(data)
+        sock1.send(serialized_payload)
+        print 'Sending ' + serialized_payload
         count += 1
     # code running for the receiver
     if sender == False:
-        sleep(0.5)
-        sock1.read(conn)
+        serialized_payload = sock1.read(conn)
+        data_loaded = pickle.load(serialized_payload)
+        to_sum = map(int,[x for x in data.split(' ') if x])
+        print '+ Sum is ' + str(sum(to_sum))
         count += 1
 
 print 'Closing...'
